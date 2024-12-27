@@ -66,7 +66,7 @@ def test_update_user(client):
             'username': 'alexeiev',
             'email': 'alex@email.com',
             'password': 'password',
-        }
+        },
     )
 
     assert response.status_code == HTTPStatus.OK
@@ -84,7 +84,7 @@ def test_update_user_deve_retornar_404(client):
             'username': 'novo',
             'email': 'alex@email.com',
             'password': 'password',
-        }
+        },
     )
 
     assert response.status_code == HTTPStatus.NOT_FOUND
