@@ -1,7 +1,9 @@
 from http import HTTPStatus
 
+from fast_zero.schemas import UserPublic
 
-def test_read_root_deve_retornar_Ola_mundo(client):
+
+def test_read_root_deve_return_Ola_mundo(client):
     response = client.get('/')
 
     assert response.status_code == HTTPStatus.OK
@@ -26,22 +28,46 @@ def test_create_user(client):
     }
 
 
+def test_create_user_with_email_exist_400(client, user):
+    response = client.post(
+        '/users/',
+        json={
+            'username': 'blablabla',
+            'email': 'alex@email.com',
+            'password': 'password',
+        }
+    )
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+
+
+def test_create_user_with_username_exist_400(client, user):
+    response = client.post(
+        '/users/',
+        json={
+            'username': 'alex',
+            'email': 'blablabla@email.com',
+            'password': 'password',
+        }
+    )
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+
+
 def test_read_users(client):
     response = client.get('/users/')
 
     assert response.status_code == HTTPStatus.OK
-    assert response.json() == {
-        'users': [
-            {
-                'id': 1,
-                'username': 'alex',
-                'email': 'alex@email.com',
-            }
-        ]
-    }
+    assert response.json() == {'users': []}
 
 
-def test_read_user_id(client):
+def test_read_users_with_user(client, user):
+    user_schema = UserPublic.model_validate(user).model_dump()
+    response = client.get('/users/')
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json() == {'users': [user_schema]}
+
+
+def test_read_user_id(client, user):
     response = client.get('/users/1')
 
     assert response.status_code == HTTPStatus.OK
@@ -52,14 +78,14 @@ def test_read_user_id(client):
     }
 
 
-def test_read_user_id_deve_retornar_404(client):
+def test_read_user_id_not_exist_return_404(client):
     response = client.get('/users/2')
 
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {'detail': 'User not found'}
 
 
-def test_update_user(client):
+def test_update_user(client, user):
     response = client.put(
         '/users/1',
         json={
@@ -77,7 +103,7 @@ def test_update_user(client):
     }
 
 
-def test_update_user_deve_retornar_404(client):
+def test_update_user_put_return_404(client):
     response = client.put(
         '/users/2',
         json={
@@ -91,7 +117,7 @@ def test_update_user_deve_retornar_404(client):
     assert response.json() == {'detail': 'User not found'}
 
 
-def test_delete_user(client):
+def test_delete_user(client, user):
     response = client.delete('/users/1')
 
     assert response.status_code == HTTPStatus.OK
