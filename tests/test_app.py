@@ -1,6 +1,7 @@
 from http import HTTPStatus
 
 from fast_zero.schemas import UserPublic
+from fast_zero.security import create_access_token
 
 
 def test_read_root_deve_return_Ola_mundo(client):
@@ -35,7 +36,7 @@ def test_create_user_with_email_exist_400(client, user):
             'username': 'blablabla',
             'email': 'alex@email.com',
             'password': 'password',
-        }
+        },
     )
     assert response.status_code == HTTPStatus.BAD_REQUEST
 
@@ -47,7 +48,7 @@ def test_create_user_with_username_exist_400(client, user):
             'username': 'alex',
             'email': 'blablabla@email.com',
             'password': 'password',
-        }
+        },
     )
     assert response.status_code == HTTPStatus.BAD_REQUEST
 
@@ -85,50 +86,99 @@ def test_read_user_id_not_exist_return_404(client):
     assert response.json() == {'detail': 'User not found'}
 
 
-def test_update_user(client, user):
+def test_update_user(client, user, token):
     response = client.put(
-        '/users/1',
+        f'/users/{user.id}',
+        headers={'Authorization': f'Bearer {token}'},
         json={
             'username': 'alexeiev',
             'email': 'alex@email.com',
-            'password': 'password',
+            'password': '123',
         },
     )
 
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {
-        'id': 1,
         'username': 'alexeiev',
         'email': 'alex@email.com',
+        'id': user.id,
     }
 
 
-def test_update_user_put_return_404(client):
+def test_update_user_put_return_403(client, user, token):
     response = client.put(
         '/users/2',
+        headers={'Authorization': f'Bearer {token}'},
         json={
             'username': 'novo',
-            'email': 'alex@email.com',
+            'email': 'alexeiev@email.com',
             'password': 'password',
         },
     )
 
-    assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {'detail': 'User not found'}
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert response.json() == {'detail': 'Not enough permissions'}
 
 
-def test_delete_user(client, user):
-    response = client.delete('/users/1')
+def test_delete_user(client, user, token):
+    response = client.delete(
+        f'/users/{user.id}',
+        headers={'Authorization': f'Bearer {token}'},
+    )
 
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {'message': 'User deleted'}
 
 
-def test_delete_user_deve_retornar_404(client):
-    response = client.delete('/users/2')
+def test_delete_user_forbidden_403(client, user, token):
+    response = client.delete(
+        '/users/2',
+        headers={'Authorization': f'Bearer {token}'},
+    )
 
-    assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {'detail': 'User not found'}
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.json() == {'detail': 'Not enough permissions'}
+
+
+def test_get_token(client, user):
+    response = client.post(
+        '/token',
+        data={
+            'username': user.email,
+            'password': user.clean_password,
+        },
+    )
+
+    token = response.json()
+    assert response.status_code == HTTPStatus.OK
+    assert token['token_type'] == 'Bearer'
+    assert 'access_token' in token
+
+
+def test_get_current_user_null_user(client):
+    data = {'sub': ''}
+    token = create_access_token(data)
+
+    response = client.delete(
+        '/users/1',
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
+    assert response.json() == {'detail': 'Could not validate credentials'}
+
+
+def test_get_token_invalid_user(client):
+    response = client.post(
+        '/token',
+        data={
+            'username': 'invalid',
+            'password': 'invalid',
+        },
+    )
+
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.json() == {'detail': 'Incorrect email or password'}
 
 
 def test_read_index_deve_retornar_HTML(client):

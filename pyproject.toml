@@ -12,6 +12,9 @@ sqlalchemy = "^2.0.36"
 pydantic-settings = "^2.7.0"
 alembic = "^1.14.0"
 time-machine = "^2.16.0"
+pwdlib = {extras = ["argon2"], version = "^0.2.1"}
+python-multipart = "^0.0.20"
+pyjwt = "^2.10.1"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.8.4"
@@ -37,7 +40,7 @@ quote-style = 'single'
 
 [tool.taskipy.tasks]
 run = 'fastapi dev fast_zero/app.py'
-pre_test = 'task lint'
+pre_test = 'task lint; task format'
 test = 'pytest -s -x --cov=fast_zero -vv'
 post_test = 'coverage html'
 lint = 'ruff check .; ruff check . --diff'
