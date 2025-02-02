@@ -34,7 +34,7 @@ def test_create_user_with_email_exist_400(client, user):
         '/users/',
         json={
             'username': 'blablabla',
-            'email': 'alex@email.com',
+            'email': 'test_4@test.com',
             'password': 'password',
         },
     )
@@ -45,7 +45,7 @@ def test_create_user_with_username_exist_400(client, user):
     response = client.post(
         '/users/',
         json={
-            'username': 'alex',
+            'username': 'test_5',
             'email': 'blablabla@email.com',
             'password': 'password',
         },
@@ -74,8 +74,8 @@ def test_read_user_id(client, user):
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {
         'id': 1,
-        'username': 'alex',
-        'email': 'alex@email.com',
+        'username': 'test_7',
+        'email': 'test_7@test.com',
     }
 
 
@@ -105,13 +105,13 @@ def test_update_user(client, user, token):
     }
 
 
-def test_update_user_put_return_403(client, user, token):
+def test_update_user_put_return_403(client, other_user, token):
     response = client.put(
-        '/users/2',
+        f'/users/{other_user.id}',
         headers={'Authorization': f'Bearer {token}'},
         json={
             'username': 'novo',
-            'email': 'alexeiev@email.com',
+            'email': 'test_01@test.com',
             'password': 'password',
         },
     )
@@ -130,9 +130,9 @@ def test_delete_user(client, user, token):
     assert response.json() == {'message': 'User deleted'}
 
 
-def test_delete_user_forbidden_403(client, user, token):
+def test_delete_wrong_user(client, other_user, token):
     response = client.delete(
-        f'/users/{user.id + 1}',
+        f'/users/{other_user.id}',
         headers={'Authorization': f'Bearer {token}'},
     )
 
